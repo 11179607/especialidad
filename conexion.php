@@ -137,14 +137,23 @@ function verificar_rol($rol_requerido)
     }
 }
 
-function limpiar_dato($dato)
+function eliminar_tildes($cadena)
+{
+    $buscar = array('á', 'é', 'í', 'ó', 'ú', 'Á', 'É', 'Í', 'Ó', 'Ú', 'ñ', 'Ñ');
+    $reemplazar = array('a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U', 'n', 'N');
+    return str_replace($buscar, $reemplazar, (string)$cadena);
+}
+
+function limpiar_dato($dato, $normalizar = false)
 {
     global $conn;
-    // Tolerar valores nulos o no escalares para evitar avisos de PHP 8.2+
     if ($dato === null || is_array($dato) || is_object($dato)) {
         return '';
     }
     $valor = trim((string)$dato);
+    if ($normalizar) {
+        $valor = eliminar_tildes($valor);
+    }
     return $conn->real_escape_string($valor);
 }
 

@@ -25,7 +25,7 @@ function generar_codigo_materia($conn, $prefijo = 'MAT')
 $codigo_sugerido = generar_codigo_materia($conn);
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nombre = limpiar_dato($_POST['nombre']);
+    $nombre = limpiar_dato($_POST['nombre'], true);
     $codigo = limpiar_dato($_POST['codigo']);
     if (empty($codigo)) {
         $codigo = generar_codigo_materia($conn);

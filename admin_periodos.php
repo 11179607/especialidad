@@ -8,7 +8,7 @@ $mensaje = '';
 // Procesar Formulario de Creación/Edición
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['guardar_periodo'])) {
-        $nombre = limpiar_dato($_POST['nombre']);
+        $nombre = limpiar_dato($_POST['nombre'], true);
         $inicio = $_POST['fecha_inicio'];
         $fin = $_POST['fecha_fin'];
         $limite = $_POST['limite_notas'];
