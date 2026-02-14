@@ -18,6 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $direccion = limpiar_dato($_POST['direccion']);
     $ciudad = limpiar_dato($_POST['ciudad']);
     $departamento = limpiar_dato($_POST['departamento']);
+    // Correo institucional (nombre correcto del input y de la columna)
     $correo_inst = limpiar_dato($_POST['correo']);
     $programa = limpiar_dato($_POST['programa_academico']);
     $semestre = limpiar_dato($_POST['semestre']);
@@ -213,7 +214,7 @@ if ($rol == 'profesor' && (empty($u['codigo_profesor']) || $u['codigo_profesor']
 
                         <div class="input-group">
                             <label class="input-label">Correo</label>
-                            <input type="email" name="correo_institucional" value="<?php echo htmlspecialchars($u['correo_institucional'] ?? ''); ?>" class="input-field" placeholder="No especificado">
+                            <input type="email" name="correo" value="<?php echo htmlspecialchars($u['correo'] ?? ''); ?>" class="input-field" placeholder="No especificado">
                         </div>
 
                         <div class="input-group">
