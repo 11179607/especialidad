@@ -169,11 +169,11 @@ $estudiantes = $conn->query("
                     <h1 class="text-gradient">Hola, Profe. <?php echo htmlspecialchars($nombre_profesor); ?></h1>
                     <p class="text-muted">Resumen de tu actividad académica</p>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+                    <div style="width: 110px; height: 110px; border-radius: 50%; background: url('<?php echo htmlspecialchars($foto_profesor); ?>') center/cover; border: 4px solid rgba(255,255,255,0.22); box-shadow: 0 12px 28px rgba(0,0,0,0.35);"></div>
                     <a href="perfil.php" class="btn btn-primary" style="font-size: 0.9rem; height: 42px; padding: 0 16px; display:flex; align-items:center; gap:8px; font-weight: 700;">
                         <i class="fa-solid fa-user-pen"></i> Editar Perfil
                     </a>
-                    <div style="width: 96px; height: 96px; border-radius: 50%; background: url('<?php echo htmlspecialchars($foto_profesor); ?>') center/cover; border: 2px solid var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.15);"></div>
                 </div>
             </header>
             <?php echo $mensaje_flash; ?>
