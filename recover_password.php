@@ -1,56 +1,72 @@
-<?php
+﻿<?php
 require_once 'conexion.php';
-// Forzamos UTF-8 en la respuesta para evitar textos mal codificados en algunos navegadores
-header('Content-Type: text/html; charset=UTF-8');
+// Asegurar UTF-8 y mostrar errores en esta página (evita pantalla en blanco si algo falla)
+if (!headers_sent()) {
+    header('Content-Type: text/html; charset=UTF-8');
+}
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+set_time_limit(15);
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
+// Log de fatal errors por si el hosting suprime output
+$fatalLog = __DIR__ . '/logs/mail-send.log';
+register_shutdown_function(function () use ($fatalLog) {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        $msg = '[' . date('Y-m-d H:i:s') . "] FATAL {$e['message']} in {$e['file']}:{$e['line']}";
+        file_put_contents($fatalLog, $msg . PHP_EOL, FILE_APPEND | LOCK_EX);
+    }
+});
 
-    $search = trim($_POST['email']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Log ligero para evitar pantalla en blanco si el hosting suprime errores
+    $logFile = __DIR__ . '/logs/mail-send.log';
+    $log = function ($msg) use ($logFile) {
+        file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] ' . $msg . PHP_EOL, FILE_APPEND | LOCK_EX);
+    };
 
-    // Buscar usuario por Email o por Identificación (Soporte Trello)
-    $stmt = $conn->prepare("SELECT id, email, nombre FROM usuarios WHERE email = ? OR identificacion = ?");
-    $stmt->bind_param("ss", $search, $search);
-    $stmt->execute();
-    $res = $stmt->get_result();
+    try {
+        $search = trim($_POST['email'] ?? '');
 
-    if ($res->num_rows > 0) {
-        $user = $res->fetch_assoc();
-        $email = $user['email'];
-        $nombre = $user['nombre'];
+        // Buscar usuario por Email o Identificacion
+        $stmt = $conn->prepare('SELECT id, email, nombre FROM usuarios WHERE email = ? OR identificacion = ?');
+        $stmt->bind_param('ss', $search, $search);
+        $stmt->execute();
+        $res = $stmt->get_result();
 
-        $token = bin2hex(random_bytes(32));
-        $expira = date("Y-m-d H:i:s", strtotime("+1 hour"));
+        if ($res->num_rows > 0) {
+            $user = $res->fetch_assoc();
+            $email = $user['email'];
+            $nombre = $user['nombre'];
 
-        $upd = $conn->prepare(
-            "UPDATE usuarios 
-             SET reset_token=?, reset_expira=? 
-             WHERE email=?"
-        );
-        $upd->bind_param("sss", $token, $expira, $email);
-        if (!$upd->execute()) {
-            echo "<h3>Error al actualizar la base de datos:</h3>";
-            echo "Error: " . $conn->error;
-            echo "<p>¿Ya ejecutaste el archivo <b>fix_db.php</b>?</p>";
-            exit;
-        }
+            $token = bin2hex(random_bytes(32));
+            $expira = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'];
-        $link = "$protocol://$host/reset_password.php?token=$token";
+            $upd = $conn->prepare('UPDATE usuarios SET reset_token=?, reset_expira=? WHERE email=?');
+            $upd->bind_param('sss', $token, $expira, $email);
+            if (!$upd->execute()) {
+                $log('DB update error: ' . $conn->error);
+                throw new Exception('No se pudo guardar el token de recuperacion.');
+            }
 
-        require_once 'config_mail.php';
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $link = "$protocol://$host/reset_password.php?token=$token";
 
-        try {
+            $log('Enviando a ' . $email . ' link=' . $link);
+
+            require_once 'config_mail.php';
+
             $mail = obtener_mailer();
-            $mail->addAddress($email);
+            $mail->addAddress($email, $nombre);
 
             $mail->isHTML(true);
-            $mail->Subject = 'Recuperación de contraseña';
+            $mail->Subject = 'Recuperacion de contrasena';
             $mail->Body = "
                 <div style='font-family: Arial, sans-serif; color: #333;'>
-                    <h2 style='color: #0d6efd;'>Recuperar contraseña</h2>
-                    <p>Hola,</p>
-                    <p>Has solicitado restablecer tu contraseña en la <strong>Plataforma UNICALI</strong>. Haz clic en el botón de abajo para continuar:</p>
+                    <h2 style='color: #0d6efd;'>Recuperar contrasena</h2>
+                    <p>Hola {$nombre},</p>
+                    <p>Has solicitado restablecer tu contrasena en la <strong>Plataforma UNICALI</strong>. Haz clic en el boton de abajo para continuar:</p>
                     <p style='margin: 30px 0;'>
                         <a href='$link' style='
                             padding: 12px 24px;
@@ -59,48 +75,55 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             text-decoration: none;
                             border-radius: 5px;
                             font-weight: bold;'>
-                            Cambiar contraseña
+                            Cambiar contrasena
                         </a>
                     </p>
-                    <p style='font-size: 0.9em; color: #666;'>Este enlace vencerá en 1 hora por razones de seguridad.</p>
+                    <p style='font-size: 0.9em; color: #666;'>Este enlace vencera en 1 hora por razones de seguridad.</p>
                     <hr style='border: 0; border-top: 1px solid #eee; margin-top: 30px;'>
                     <p style='font-size: 0.8em; color: #999;'>Si no solicitaste este cambio, puedes ignorar este correo.</p>
                 </div>
             ";
 
-            $mail->send();
-            header("Location: recover_password.php?ok=1");
+            if (!$mail->send()) {
+                $log('PHPMailer send() error: ' . $mail->ErrorInfo);
+                throw new Exception($mail->ErrorInfo ?: 'El servidor SMTP rechazo la solicitud.');
+            }
+
+            header('Location: recover_password.php?ok=1');
             exit;
-        } catch (Exception $e) {
-            // Fallback para entorno local: registrar el correo en logs y simular éxito
-            $host = $_SERVER['HTTP_HOST'] ?? '';
-            $forceProd = getenv('SMTP_FORCE_PROD');
-            $isLocal = !$forceProd && (
-                stripos($host, 'localhost') !== false
-                || stripos($host, '127.0.0.1') !== false
-                || getenv('APP_ENV') === 'local'
-            );
-
-            if ($isLocal) {
-                $logPath = __DIR__ . '/logs/mail-local.log';
-                $payload = "---- " . date('Y-m-d H:i:s') . " ----\n"
-                    . "TO: {$email}\nSUBJECT: Recuperación de contraseña\nLINK: {$link}\n\n"
-                    . "HTML:\n" . strip_tags($mail->Body) . "\n\n";
-                file_put_contents($logPath, $payload, FILE_APPEND | LOCK_EX);
-                header("Location: recover_password.php?ok=1&simulado=1");
-                exit;
-            }
-
-            $error_info = $mail->ErrorInfo;
-            if (strpos($error_info, 'authenticate') !== false) {
-                $error_envio = "<b>Error de Autenticación:</b> Google rechazó la clave. <br>1. Revisa que tu 'Contraseña de aplicación' sea correcta. <br>2. Confirma en tu Gmail el aviso de 'Inicio de sesión bloqueado'.";
-            } else {
-                $error_envio = "Error al enviar: " . $error_info;
-            }
+        } else {
+            $safeSearch = htmlspecialchars($search, ENT_QUOTES, 'UTF-8');
+            $error_envio = "El correo o identificacion '$safeSearch' no esta registrado.";
         }
-    } else {
-        $safeSearch = htmlspecialchars($search, ENT_QUOTES, "UTF-8");
-        $error_envio = "El correo o identificación '$safeSearch' no está registrado.";
+    } catch (Exception $e) {
+        // Fallback para entorno local: registrar el correo en logs y simular exito
+        $host = $_SERVER['HTTP_HOST'] ?? '';
+        $forceProd = getenv('SMTP_FORCE_PROD');
+        $isLocal = !$forceProd && (
+            stripos($host, 'localhost') !== false
+            || stripos($host, '127.0.0.1') !== false
+            || getenv('APP_ENV') === 'local'
+        );
+
+        if (isset($mail) && $isLocal) {
+            $logPath = __DIR__ . '/logs/mail-local.log';
+            $payload = "---- " . date('Y-m-d H:i:s') . " ----\n"
+                . "TO: {$email}\nSUBJECT: Recuperacion de contrasena\nLINK: {$link}\n\n"
+                . "HTML:\n" . strip_tags($mail->Body ?? '') . "\n\n";
+            file_put_contents($logPath, $payload, FILE_APPEND | LOCK_EX);
+            header('Location: recover_password.php?ok=1&simulado=1');
+            exit;
+        }
+
+        $log('Excepcion: ' . $e->getMessage());
+        $error_info = isset($mail) ? ($mail->ErrorInfo ?? '') : '';
+
+        if (strpos(strtolower($error_info), 'authenticate') !== false) {
+            $error_envio = "<b>Error de autenticacion:</b> Google rechazo la clave. <br>1. Revisa que tu 'Contrasena de aplicacion' sea correcta. <br>2. Confirma en tu Gmail el aviso de 'Inicio de sesion bloqueado'.";
+        } else {
+            $detalle = $e->getMessage() ?: $error_info;
+            $error_envio = 'No pudimos enviar el correo. Detalle: ' . htmlspecialchars($detalle, ENT_QUOTES, 'UTF-8');
+        }
     }
 }
 ?>
@@ -110,7 +133,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recuperar Contraseña - Unicali Segura</title>
+    <title>Recuperar Contrase&#241;a - Unicali Segura</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="css/estilos.css">
 </head>
@@ -128,8 +151,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <div class="glass-panel login-box fade-in" style="max-width: 480px;">
             <div class="logo-area" style="margin-bottom: 30px;">
                 <i class="fa-solid fa-key logo-large" style="color: var(--primary);"></i>
-                <h2 style="font-size: 2rem;">¿Olvidaste tu clave?</h2>
-                <p class="text-muted">Ingresa tu correo o número de identificación para recibir un enlace de recuperación.</p>
+                <h2 style="font-size: 2rem;">&#191;Olvidaste tu clave?</h2>
+                <p class="text-muted">Ingresa tu correo o n&#250;mero de identificaci&#243;n para recibir un enlace de recuperaci&#243;n.</p>
             </div>
 
             <?php if (isset($_GET['ok'])): ?>
@@ -146,7 +169,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             <form method="POST">
                 <div class="input-group">
-                    <label class="input-label">Correo o Identificación (Cédula/TI)</label>
+                    <label class="input-label">Correo o Identificaci&#243;n (C&#233;dula/TI)</label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-user-shield" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--primary); opacity: 0.5;"></i>
                         <input type="text" name="email" class="input-field" placeholder="Ej: p.segura@unicali.edu.co o 1002938..." required style="padding-left: 45px;">
@@ -160,7 +183,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             <div class="security-badge" style="margin-top: 30px;">
                 <i class="fa-solid fa-shield-halved"></i>
-                <span>Protección de Datos Unicali Segura</span>
+                <span>Protecci&#243;n de Datos Unicali Segura</span>
             </div>
         </div>
     </div>
