@@ -30,8 +30,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Buscar usuario por Email o Identificacion
         $stmt = $conn->prepare('SELECT id, email, nombre FROM usuarios WHERE email = ? OR identificacion = ?');
+        if (!$stmt) {
+            $log('Prepare usuarios error: ' . $conn->error);
+            throw new Exception('No se pudo preparar la consulta de usuario.');
+        }
         $stmt->bind_param('ss', $search, $search);
-        $stmt->execute();
+        if (!$stmt->execute()) {
+            $log('Execute usuarios error: ' . $stmt->error);
+            throw new Exception('No se pudo ejecutar la consulta de usuario.');
+        }
         $res = $stmt->get_result();
 
         if ($res->num_rows > 0) {
@@ -43,9 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $expira = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
             $upd = $conn->prepare('UPDATE usuarios SET reset_token=?, reset_expira=? WHERE email=?');
+            if (!$upd) {
+                $log('Prepare update error: ' . $conn->error);
+                throw new Exception('No se pudo preparar la actualizacion del token.');
+            }
             $upd->bind_param('sss', $token, $expira, $email);
             if (!$upd->execute()) {
-                $log('DB update error: ' . $conn->error);
+                $log('DB update error: ' . $upd->error);
                 throw new Exception('No se pudo guardar el token de recuperacion.');
             }
 
