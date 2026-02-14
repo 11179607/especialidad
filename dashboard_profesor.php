@@ -11,6 +11,9 @@ $res_foto = $conn->query("SELECT foto FROM usuarios WHERE id = $profesor_id");
 if ($res_foto && ($rowf = $res_foto->fetch_assoc()) && !empty($rowf['foto'])) {
     $foto_profesor = obtener_foto_usuario($rowf['foto']);
 }
+if (empty($foto_profesor)) {
+    $foto_profesor = obtener_foto_usuario(null);
+}
 $mensaje_flash = '';
 $periodo_actual_id = obtener_periodo_actual();
 $tiene_columna_periodo = false;
@@ -55,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['inscribir_rapido'])) 
 
 $sql_materias = "SELECT COUNT(*) as total FROM materias WHERE profesor_id = $profesor_id";
 $res_materias = $conn->query($sql_materias);
-$total_materias = $res_materias->fetch_assoc()['total'];
+$total_materias = ($res_materias && ($row_tm = $res_materias->fetch_assoc())) ? (int)$row_tm['total'] : 0;
 $materias_profesor = [];
 $res_lista_m = $conn->query("SELECT id, nombre, codigo FROM materias WHERE profesor_id = $profesor_id ORDER BY nombre");
 if ($res_lista_m) {
@@ -69,7 +72,7 @@ $sql_alumnos = "SELECT COUNT(DISTINCT estudiante_id) as total
                 JOIN materias mat ON m.materia_id = mat.id 
                 WHERE mat.profesor_id = $profesor_id";
 $res_alumnos = $conn->query($sql_alumnos);
-$total_alumnos = ($res_alumnos) ? $res_alumnos->fetch_assoc()['total'] : 0;
+$total_alumnos = ($res_alumnos && $ra = $res_alumnos->fetch_assoc()) ? (int)$ra['total'] : 0;
 
 $estudiantes_pendientes = $conn->query("
     SELECT u.id, u.nombre, u.email, u.programa_academico, u.semestre, u.foto, u.created_at
@@ -167,7 +170,7 @@ $estudiantes = $conn->query("
                     <p class="text-muted">Resumen de tu actividad académica</p>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="width: 44px; height: 44px; border-radius: 50%; background: url('<?php echo htmlspecialchars($foto_profesor); ?>') center/cover; border: 2px solid var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.15);"></div>
+                    <div style="width: 96px; height: 96px; border-radius: 50%; background: url('<?php echo htmlspecialchars($foto_profesor); ?>') center/cover; border: 2px solid var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.15);"></div>
                 </div>
             </header>
             <?php echo $mensaje_flash; ?>
