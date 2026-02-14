@@ -8,7 +8,7 @@ $nombre_profesor = obtener_nombre_usuario();
 // Asegurar foto fresca desde BD (fallback al valor de sesión)
 $foto_profesor = obtener_foto_usuario($_SESSION['foto'] ?? null);
 $res_foto = $conn->query("SELECT foto FROM usuarios WHERE id = $profesor_id");
-if ($res_foto && $rowf = $res_foto->fetch_assoc() && !empty($rowf['foto'])) {
+if ($res_foto && ($rowf = $res_foto->fetch_assoc()) && !empty($rowf['foto'])) {
     $foto_profesor = obtener_foto_usuario($rowf['foto']);
 }
 $mensaje_flash = '';

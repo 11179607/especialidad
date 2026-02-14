@@ -5,7 +5,12 @@ verificar_rol('estudiante');
 
 $estudiante_id = $_SESSION['usuario_id'];
 $nombre_estudiante = obtener_nombre_usuario();
+// Asegurar foto fresca desde BD (por si la sesión no la trae)
 $foto_estudiante = obtener_foto_usuario($_SESSION['foto'] ?? null);
+$res_foto_est = $conn->query("SELECT foto FROM usuarios WHERE id = $estudiante_id");
+if ($res_foto_est && ($frow = $res_foto_est->fetch_assoc()) && !empty($frow['foto'])) {
+    $foto_estudiante = obtener_foto_usuario($frow['foto']);
+}
 
 // Obtener Periodo Actual de forma segura (Self-Healing)
 $p_actual_id = obtener_periodo_actual();
