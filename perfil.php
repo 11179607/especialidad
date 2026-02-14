@@ -9,6 +9,21 @@ if (!$resUsuario) {
     exit('Error al cargar el perfil: ' . htmlspecialchars($conn->error));
 }
 $u = $resUsuario->fetch_assoc() ?: [];
+// Evitar avisos de claves faltantes (datos opcionales)
+$u_defaults = [
+    'semestre' => '',
+    'programa_academico' => '',
+    'correo_institucional' => '',
+    'codigo_estudiantil' => '',
+    'codigo_profesor' => '',
+    'identificacion' => '',
+    'telefono' => '',
+    'direccion' => '',
+    'ciudad' => '',
+    'departamento' => '',
+    'foto' => 'default_avatar.png',
+];
+$u = array_merge($u_defaults, $u);
 
 // Self-healing: columna de código profesor si falta
 $col_prof = $conn->query("SHOW COLUMNS FROM usuarios LIKE 'codigo_profesor'");

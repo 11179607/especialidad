@@ -9,7 +9,14 @@ $user_id = $_GET['usuario_id'] ?? $_SESSION['usuario_id'];
 // Obtener datos del usuario
 $q_user = $conn->query("SELECT * FROM usuarios WHERE id = $user_id");
 $user = $q_user->fetch_assoc() ?: [];
-$user_nombre = $user['nombre'] ?? '';
+$user_defaults = [
+    'nombre' => 'Usuario',
+    'identificacion' => 'N/A',
+    'codigo_estudiantil' => 'N/A',
+    'programa_academico' => 'Formación General',
+];
+$user = array_merge($user_defaults, $user);
+$user_nombre = $user['nombre'];
 
 // Generación automática de Código Estudiantil si no existe o es N/A
 if (empty($user['codigo_estudiantil']) || $user['codigo_estudiantil'] == 'N/A') {
