@@ -78,8 +78,8 @@ if ($conn->connect_errno) {
     http_response_code(503);
     // Respuesta limpia y sin "pantallazo rojo"
     $mensaje = $isLocal
-        ? 'No se pudo conectar a la base de datos local. Verifica MySQL, usuario, contraseÃ±a y nombre de BD.'
-        : 'Estamos realizando ajustes tÃ©cnicos. Intenta nuevamente en unos minutos.';
+        ? 'No se pudo conectar a la base de datos local. Verifica MySQL, usuario, contrase&ntilde;a y nombre de BD.'
+        : 'Estamos realizando ajustes t&eacute;cnicos. Intenta nuevamente en unos minutos.';
 
     echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
