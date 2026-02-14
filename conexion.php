@@ -146,7 +146,10 @@ function verificar_rol($rol_requerido)
 function limpiar_dato($dato)
 {
     global $conn;
-    return $conn->real_escape_string(trim($dato));
+    if ($dato === null) {
+        return '';
+    }
+    return $conn->real_escape_string(trim((string)$dato));
 }
 
 function obtener_nombre_usuario()
