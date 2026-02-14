@@ -9,11 +9,18 @@ if (!isset($_GET['token'])) {
 $token = $_GET['token'];
 
 $sql = $conn->prepare(
-    "SELECT id FROM usuarios 
-     WHERE reset_token=? AND reset_expira > NOW()"
+    "SELECT u.id, u.email 
+     FROM password_resets pr
+     JOIN usuarios u ON u.email = pr.email
+     WHERE pr.token=? AND pr.expira > NOW()"
 );
+if (!$sql) {
+    die("No se pudo preparar la consulta de token.");
+}
 $sql->bind_param("s", $token);
-$sql->execute();
+if (!$sql->execute()) {
+    die("No se pudo validar el token.");
+}
 $res = $sql->get_result();
 
 if ($res->num_rows === 0) {
@@ -33,16 +40,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
         $password = password_hash($pass_raw, PASSWORD_DEFAULT);
 
-        $upd = $conn->prepare(
-            "UPDATE usuarios 
-             SET password=?, reset_token=NULL, reset_expira=NULL 
-             WHERE id=?"
-        );
-        $upd->bind_param("si", $password, $usuario['id']);
-        $upd->execute();
-
-        header("Location: login.php?reset=ok");
-        exit;
+        $upd = $conn->prepare("UPDATE usuarios SET password=? WHERE id=?");
+        if (!$upd) {
+            $error = "No se pudo preparar la actualizacion de la contraseña.";
+        } else {
+            $upd->bind_param("si", $password, $usuario['id']);
+            if ($upd->execute()) {
+                $del = $conn->prepare("DELETE FROM password_resets WHERE token=?");
+                if ($del) {
+                    $del->bind_param("s", $token);
+                    $del->execute();
+                }
+                header("Location: login.php?reset=ok");
+                exit;
+            } else {
+                $error = "No se pudo actualizar la contraseña.";
+            }
+        }
     }
 }
 $error = isset($error) ? $error : '';

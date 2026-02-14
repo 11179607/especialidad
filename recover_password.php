@@ -49,14 +49,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $token = bin2hex(random_bytes(32));
             $expira = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-            $upd = $conn->prepare('UPDATE usuarios SET reset_token=?, reset_expira=? WHERE email=?');
-            if (!$upd) {
-                $log('Prepare update error: ' . $conn->error);
-                throw new Exception('No se pudo preparar la actualizacion del token.');
+            // Limpiamos tokens previos para ese email e insertamos uno nuevo en password_resets
+            $del = $conn->prepare('DELETE FROM password_resets WHERE email = ?');
+            if (!$del) {
+                $log('Prepare delete reset error: ' . $conn->error);
+                throw new Exception('No se pudo preparar el borrado de tokens previos.');
             }
-            $upd->bind_param('sss', $token, $expira, $email);
-            if (!$upd->execute()) {
-                $log('DB update error: ' . $upd->error);
+            $del->bind_param('s', $email);
+            if (!$del->execute()) {
+                $log('Execute delete reset error: ' . $del->error);
+                throw new Exception('No se pudo limpiar tokens previos.');
+            }
+
+            $ins = $conn->prepare('INSERT INTO password_resets (email, token, expira) VALUES (?, ?, ?)');
+            if (!$ins) {
+                $log('Prepare insert reset error: ' . $conn->error);
+                throw new Exception('No se pudo preparar el guardado del token.');
+            }
+            $ins->bind_param('sss', $email, $token, $expira);
+            if (!$ins->execute()) {
+                $log('Insert reset error: ' . $ins->error);
                 throw new Exception('No se pudo guardar el token de recuperacion.');
             }
 
