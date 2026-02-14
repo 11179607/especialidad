@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once 'conexion.php';
 verificar_sesion();
 verificar_rol('profesor');
@@ -114,9 +114,9 @@ $estudiantes = $conn->query("
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="css/estilos.css">
-    <link rel="icon" type="image/png" href="favicon.png?v=3">
-    <link rel="shortcut icon" href="favicon.ico?v=3">
-    <link rel="apple-touch-icon" href="favicon.png?v=3">
+    <link rel="icon" type="image/png" href="/favicon.png?v=3">
+    <link rel="shortcut icon" href="/favicon.ico?v=3">
+    <link rel="apple-touch-icon" href="/favicon.png?v=3">
 </head>
 
 <body>

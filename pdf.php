@@ -60,9 +60,9 @@ if (!$res) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificado_Oficial_<?php echo $id; ?></title>
-    <link rel="icon" type="image/png" href="favicon.png?v=3">
-    <link rel="shortcut icon" href="favicon.ico?v=3">
-    <link rel="apple-touch-icon" href="favicon.png?v=3">
+    <link rel="icon" type="image/png" href="/favicon.png?v=3">
+    <link rel="shortcut icon" href="/favicon.ico?v=3">
+    <link rel="apple-touch-icon" href="/favicon.png?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {

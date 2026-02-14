@@ -56,7 +56,7 @@ $qr_api_url = "https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=" . url
 <head>
     <meta charset="UTF-8">
     <title>CERTIF_<?php echo strtoupper($user_nombre); ?>_<?php echo $folio; ?></title>
-    <link rel="icon" type="image/png" href="favicon.png?v=3">
+    <link rel="icon" type="image/png" href="/favicon.png?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
     <style>
         :root {
